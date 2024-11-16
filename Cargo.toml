@@ -1,0 +1,15 @@
+[package]
+name = "plak"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uuid = { version = "1.11.0", features = ["v4"] }
+rayon = { version = "1.10.0" }
+dirs = { version = "5.0" }
+toml = { version = "0.8" }
+serde = { version = "1.0", features = ["derive"] }
+adw = { version = "0.7.1", package = "libadwaita", features = ["v1_6"] }
+gtk = { version = "0.9.4", package = "gtk4", features = ["v4_16"] }
+async-channel = {version = "2.3.1"}
+reqwest = { version = "0.12.9", features = ["blocking", "json"] }
