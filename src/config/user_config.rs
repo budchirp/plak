@@ -12,7 +12,7 @@ use super::Config;
 pub struct UserConfigStruct {
     pub is_initial_setup_done: bool,
 
-    pub instances_dir: PathBuf,
+    pub data_dir: PathBuf,
 
     pub username: String,
     pub uuid: String,
@@ -25,6 +25,8 @@ pub struct UserConfigStruct {
     pub jvm_args: String,
 
     pub use_dedicated_gpu: bool,
+    // TODO: implement this
+    pub use_gamemoderun: bool,
 }
 
 #[derive(Clone)]
@@ -37,8 +39,6 @@ pub struct UserConfigManager {
 impl UserConfigManager {
     pub fn new() -> Self {
         let config = Config::new();
-
-        let _ = fs::create_dir_all(&config.config_dir);
 
         Self {
             toml: Toml::new(&config.config_file),
@@ -62,7 +62,7 @@ impl UserConfigManager {
             let new_user_config = UserConfigStruct {
                 is_initial_setup_done: false,
 
-                instances_dir: dirs::data_dir().unwrap().join("plak/instances"),
+                data_dir: dirs::data_dir().unwrap(),
 
                 username: "steve".to_string(),
                 uuid: Uuid::new_v4().to_string(),
@@ -71,6 +71,8 @@ impl UserConfigManager {
                 max_memory: "2G".to_string(),
                 initial_memory: "1G".to_string(),
 
+                // TODO: create a CommandLine class that gets the actual url of the command
+                // and executes it in another thread
                 java_bin: Command::new("which")
                     .arg("java")
                     .output()
@@ -84,6 +86,7 @@ impl UserConfigManager {
                 jvm_args: "".to_string(),
 
                 use_dedicated_gpu: false,
+                use_gamemoderun: false,
             };
 
             self.set(&new_user_config)?;

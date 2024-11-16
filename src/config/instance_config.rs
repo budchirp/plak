@@ -34,7 +34,8 @@ impl InstanceConfigManager {
     pub fn new(slug: &str) -> Self {
         let user_config = UserConfigManager::new().get();
 
-        let instance_dir = user_config.instances_dir.join(slug);
+        let instances_dir = user_config.data_dir.join("instances");
+        let instance_dir = instances_dir.join(slug);
         let instance_config_file = instance_dir.join("instance.toml");
 
         let _ = fs::create_dir_all(&instance_dir);
@@ -89,7 +90,7 @@ impl InstanceConfigManager {
         let user_config = UserConfigManager::new().get();
 
         let mut instances = Vec::<InstanceConfigStruct>::new();
-        for instance in fs::read_dir(&user_config.instances_dir)? {
+        for instance in fs::read_dir(&user_config.data_dir.join("instances"))? {
             let instance = instance?;
 
             let path = instance.path().join("instance.toml");

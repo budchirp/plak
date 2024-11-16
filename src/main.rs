@@ -4,10 +4,10 @@ use init::Init;
 mod app;
 mod config;
 mod constants;
+mod init;
 mod minecraft;
 mod network;
 mod toml;
-mod init;
 mod ui;
 mod window;
 

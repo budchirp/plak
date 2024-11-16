@@ -20,7 +20,7 @@ impl Init {
 
     pub fn initialize(&self) -> Result<(), Box<dyn Error>> {
         self.create_config_dir()?;
-        self.create_instances_dir()?;
+        self.create_data_dir()?;
 
         Ok(())
     }
@@ -33,9 +33,29 @@ impl Init {
         Ok(())
     }
 
-    pub fn create_instances_dir(&self) -> Result<(), Box<dyn Error>> {
-        if !self.user_config_struct.instances_dir.exists() {
-            fs::create_dir_all(&self.user_config_struct.instances_dir)?;
+    pub fn create_data_dir(&self) -> Result<(), Box<dyn Error>> {
+        if !self.user_config_struct.data_dir.exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir)?;
+        }
+
+        if !self.user_config_struct.data_dir.join("instances").exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir.join("instances"))?;
+        }
+
+        if !self.user_config_struct.data_dir.join("clients").exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir.join("clients"))?;
+        }
+
+        if !self.user_config_struct.data_dir.join("libraries").exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir.join("libraries"))?;
+        }
+
+        if !self.user_config_struct.data_dir.join("natives").exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir.join("natives"))?;
+        }
+
+        if !self.user_config_struct.data_dir.join("assets").exists() {
+            fs::create_dir_all(&self.user_config_struct.data_dir.join("assets"))?;
         }
 
         Ok(())

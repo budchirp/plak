@@ -5,6 +5,5 @@ pub(crate) const APP_NAME: &str = "Plak";
 
 pub(crate) const DEVELOPERS: [&str; 1] = ["Can Kolay"];
 
-pub(crate) const DB_FILE: &str = "db.sqlite";
 pub(crate) const CONFIG_DIR: &str = "plak";
 pub(crate) const CONFIG_FILE: &str = "config.toml";

@@ -9,20 +9,20 @@ impl ContentPage {
         menu.append(Some("About"), Some("app.about"));
         menu.append(Some("Quit"), Some("app.quit"));
 
-        let menu_button = MenuButton::builder()
-            .menu_model(&menu)
-            .icon_name("open-menu-symbolic")
-            .build();
+        let stack_toolbar = ToolbarView::builder().content(stack_content).build();
 
         let stack_header_bar = HeaderBar::builder()
             .show_title(false)
             .css_classes(["devel"])
             .build();
-        stack_header_bar.pack_end(&menu_button);
-
-        let stack_toolbar = ToolbarView::builder().content(stack_content).build();
         stack_toolbar.add_top_bar(&stack_header_bar);
 
-        NavigationPage::new(&stack_toolbar, "Content")
+        let menu_button = MenuButton::builder()
+            .menu_model(&menu)
+            .icon_name("open-menu-symbolic")
+            .build();
+        stack_header_bar.pack_end(&menu_button);
+
+        NavigationPage::new(&stack_toolbar, "Instance")
     }
 }

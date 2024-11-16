@@ -9,16 +9,17 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let app = Application::new(Some(constants::APP_ID), gtk::gio::ApplicationFlags::FLAGS_NONE);
-
-        Self { app }
+        Self {
+            app: Application::new(
+                Some(constants::APP_ID),
+                gtk::gio::ApplicationFlags::FLAGS_NONE,
+            ),
+        }
     }
 
     pub fn run(&self) {
         self.setup_actions();
-
-        self.app.set_accels_for_action("app.quit", &["<primary>q"]);
-        self.app.set_accels_for_action("app.about", &["<primary>a"]);
+        self.setup_accels();
 
         self.app.connect_activate(|app| {
             let window = Window::new(app);
@@ -28,7 +29,12 @@ impl App {
         self.app.run();
     }
 
-    pub fn setup_actions(&self) {
+    fn setup_accels(&self) {
+        self.app.set_accels_for_action("app.quit", &["<primary>q"]);
+        self.app.set_accels_for_action("app.about", &["<primary>a"]);
+    }
+
+    fn setup_actions(&self) {
         let app_clone = self.app.clone();
         let quit_action = gio::ActionEntry::builder("quit")
             .activate(move |_, _, _| app_clone.quit())

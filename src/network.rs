@@ -10,9 +10,9 @@ pub struct Network {
 
 impl Network {
     pub fn new() -> Self {
-        let client = Client::new();
-
-        Self { client }
+        Self {
+            client: Client::new(),
+        }
     }
 
     pub fn fetch<T: DeserializeOwned>(&self, url: &str) -> Result<T, Box<dyn Error>> {
@@ -22,6 +22,8 @@ impl Network {
             .send()?
             .json::<T>()
             .expect(&format!("Failed to fetch {}", url));
+
+        println!("Fetched {}", url);
 
         Ok(response)
     }

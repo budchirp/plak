@@ -54,8 +54,14 @@ struct Library {
 }
 
 #[derive(Deserialize)]
+struct ArtifactDownload {
+    url: String,
+    path: String,
+}
+
+#[derive(Deserialize)]
 struct LibraryDownload {
-    artifact: Option<Download>,
+    artifact: Option<ArtifactDownload>,
     classifiers: Option<Classifiers>,
 }
 
@@ -86,9 +92,14 @@ pub struct Minecraft {
     network: Network,
 
     user_config_struct: UserConfigStruct,
+
     instance_config_manager: InstanceConfigManager,
 
-    instance_dir: PathBuf,
+    game_dir: PathBuf,
+    clients_dir: PathBuf,
+    libraries_dir: PathBuf,
+    natives_dir: PathBuf,
+    assets_dir: PathBuf,
 
     slug: String,
 }
@@ -97,52 +108,87 @@ impl Minecraft {
     pub fn new(slug: &str) -> Self {
         let user_config_struct = UserConfigManager::new().get();
 
-        let instance_dir = user_config_struct.instances_dir.join(slug);
+        let instance_config_manager = InstanceConfigManager::new(&slug);
 
         Self {
             network: Network::new(),
 
-            user_config_struct,
-            instance_config_manager: InstanceConfigManager::new(&slug),
+            user_config_struct: user_config_struct.clone(),
 
-            instance_dir,
+            instance_config_manager: instance_config_manager.clone(),
+
+            game_dir: user_config_struct.data_dir.join("instances").join(&slug).join("minecraft"),
+            clients_dir: user_config_struct.data_dir.join("clients"),
+            libraries_dir: user_config_struct.data_dir.join("libraries"),
+            natives_dir: user_config_struct.data_dir.join("natives"),
+            assets_dir: user_config_struct.data_dir.join("assets"),
 
             slug: slug.to_string(),
         }
     }
 
-    fn craft_arguments(&self, offline: bool) -> Vec<String> {
+    fn collect_jar_dirs(&self, path: &Path, classpath: &mut String) {
+        if path.is_dir() {
+            let mut contains_jar = false;
+            if let Ok(entries) = fs::read_dir(path) {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let entry_path = entry.path();
+                        if entry_path.is_dir() {
+                            self.collect_jar_dirs(&entry_path, classpath);
+                        } else if let Some(extension) = entry_path.extension() {
+                            if extension == "jar" {
+                                contains_jar = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if contains_jar {
+                classpath.push_str(&format!("{}/*:", path.to_str().unwrap()));
+            }
+        }
+    }
+
+    fn get_classpath(&self) -> String {
+        let mut classpath = String::new();
+
         let instance_config_struct = self.instance_config_manager.get();
 
         let client_jar = self
-            .instance_dir
-            .join("client.jar")
+            .clients_dir
+            .join(&format!("client-{}.jar", &instance_config_struct.version))
             .to_string_lossy()
             .to_string();
-        let libraries_dir = self
-            .instance_dir
-            .join("libraries")
-            .to_string_lossy()
-            .to_string();
+
+        classpath.push_str(&format!("{}:", &client_jar));
+
+        let libraries_dir = self.libraries_dir.join(&instance_config_struct.version);
+        self.collect_jar_dirs(&libraries_dir, &mut classpath);
+
+        if classpath.ends_with(':') {
+            classpath.pop();
+        }
+
+        classpath
+    }
+
+    fn craft_arguments(&self, offline: bool) -> Vec<String> {
+        let instance_config_struct = self.instance_config_manager.get();
+
         let natives_dir = self
-            .instance_dir
-            .join("natives")
+            .natives_dir
+            .join(&instance_config_struct.version)
             .to_string_lossy()
             .to_string();
         let asssets_dir = self
-            .instance_dir
-            .join("assets")
+            .assets_dir
+            .join(&instance_config_struct.asset_index)
             .to_string_lossy()
             .to_string();
-        let game_dir = self
-            .instance_dir
-            .join("minecraft")
-            .to_string_lossy()
-            .to_string();
+        let game_dir = self.game_dir.to_string_lossy().to_string();
 
-        let classpath = format!("{}:{}", client_jar, format!("{}/{}", libraries_dir, "*"));
-
-        let user_type = if offline { "legacy" } else { "mojang" };
         let game_args = vec![
             "--version",
             &instance_config_struct.version,
@@ -153,7 +199,7 @@ impl Minecraft {
             "--accessToken",
             &self.user_config_struct.token,
             "--userType",
-            user_type,
+            if offline { "legacy" } else { "mojang" },
             "--assetIndex",
             &instance_config_struct.asset_index,
             "--assetsDir",
@@ -163,18 +209,16 @@ impl Minecraft {
         ];
 
         let mut args = vec![
-            format!("-Djava.library.path={}", natives_dir),
+            format!("-Djava.library.path={}", &natives_dir),
             "-cp".to_string(),
-            classpath,
+            self.get_classpath(),
             instance_config_struct.main_class,
-            format!("-Xmx{}", self.user_config_struct.max_memory),
-            format!("-Xms{}", self.user_config_struct.initial_memory),
+            format!("-Xmx{}", &self.user_config_struct.max_memory),
+            format!("-Xms{}", &self.user_config_struct.initial_memory),
             self.user_config_struct.jvm_args.clone(),
         ];
 
         args.extend(game_args.iter().map(|&arg| arg.to_string()));
-
-        println!("{:#?}", args);
 
         args
     }
@@ -190,22 +234,18 @@ impl Minecraft {
                 .env("__GLX_VENDOR_LIBRARY_NAME", "nvidia");
         }
 
-        let output = command.output()?;
-        let status = output.status;
+        let status = command.status()?;
         if status.success() {
             Ok(())
         } else {
-            Err(format!(
-                "{}",
-                String::from_utf8_lossy(&output.stdout)
-            )
-            .into())
+            Err(format!("Status code: {}", &status.code().unwrap()).into())
         }
     }
 
     pub fn download(&self, version: &str) -> Result<(), Box<dyn Error>> {
-        let manifest_url = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
-        let manifest = self.network.fetch::<VersionManifest>(manifest_url)?;
+        let manifest = self.network.fetch::<VersionManifest>(
+            "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+        )?;
 
         let selected_version = manifest.versions.iter().find(|v| v.id == version).unwrap();
         let version_details = self
@@ -214,23 +254,25 @@ impl Minecraft {
 
         self.network.download(
             &version_details.downloads.client.url,
-            self.instance_dir.join("client.jar"),
+            self.clients_dir.join(&format!("client-{}.jar", &version)),
         )?;
 
-        let libraries_dir = self.instance_dir.join("libraries");
-        let natives_dir = self.instance_dir.join("natives");
+        let libraries_dir = self.libraries_dir.join(&version);
+        let natives_dir = self.natives_dir.join(&version);
         fs::create_dir_all(&libraries_dir)?;
         fs::create_dir_all(&natives_dir)?;
         for library in version_details.libraries {
             if let Some(artifact) = library.downloads.artifact {
-                let path = libraries_dir.join(Path::new(&artifact.url).file_name().unwrap());
+                let path = libraries_dir.join(&artifact.path);
+                fs::create_dir_all(path.parent().unwrap())?;
 
                 self.network.download(&artifact.url, path)?;
             };
 
             if let Some(classifiers) = library.downloads.classifiers {
                 if let Some(natives_linux) = classifiers.natives_linux {
-                    let path = natives_dir.join(Path::new(&natives_linux.url).file_name().unwrap());
+                    let path =
+                        &natives_dir.join(&Path::new(&natives_linux.url).file_name().unwrap());
                     self.network.download(&natives_linux.url, path.clone())?;
 
                     Command::new("unzip")
@@ -246,7 +288,7 @@ impl Minecraft {
             }
         }
 
-        let assets_dir = self.instance_dir.join("assets");
+        let assets_dir = self.assets_dir.join(&version_details.asset_index.id);
         let objects_dir = assets_dir.join("objects");
         let indexes_dir = assets_dir.join("indexes");
         fs::create_dir_all(&objects_dir)?;
@@ -254,7 +296,7 @@ impl Minecraft {
 
         self.network.download(
             &version_details.asset_index.url,
-            indexes_dir.join(format!("{}.json", version_details.asset_index.id)),
+            indexes_dir.join(&format!("{}.json", &version_details.asset_index.id)),
         )?;
 
         let asset_index = self
@@ -265,7 +307,6 @@ impl Minecraft {
         let asset_list: Vec<(String, AssetObject)> = asset_index.objects.into_iter().collect();
         let network = Arc::new(self.network.clone());
         let objects_dir = Arc::new(objects_dir);
-
         asset_list.par_iter().for_each(|(_, asset)| {
             let asset_url = format!(
                 "https://resources.download.minecraft.net/{}/{}",
@@ -282,6 +323,7 @@ impl Minecraft {
 
         let mut new_instance_config_struct = self.instance_config_manager.get();
         new_instance_config_struct.downloaded = true;
+        new_instance_config_struct.version = version.to_string();
         new_instance_config_struct.asset_index = version_details.asset_index.id;
         new_instance_config_struct.main_class = version_details.main_class;
 

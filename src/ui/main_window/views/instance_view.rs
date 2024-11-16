@@ -3,7 +3,7 @@ use async_channel::Sender;
 use gtk::{
     glib::{self, clone},
     prelude::*,
-    Align, Box, Button, Image, Label, Orientation, Widget,
+    Align, Box, Button, IconSize, Image, Label, Orientation, Widget,
 };
 
 use crate::{
@@ -19,20 +19,26 @@ impl InstanceView {
         instance_config_struct: InstanceConfigStruct,
         sender: Sender<String>,
     ) -> impl IsA<Widget> {
-        let icon = Image::new();
-        icon.set_from_file(Some(&instance_config_struct.image_path));
-        icon.set_size_request(192, 192);
-        icon.set_icon_size(gtk::IconSize::Inherit);
-        icon.set_halign(gtk::Align::Start);
-        icon.set_valign(gtk::Align::Start);
+        let container = gtk::Box::builder()
+            .orientation(Orientation::Vertical)
+            .spacing(12)
+            .margin_start(12)
+            .margin_end(12)
+            .margin_top(12)
+            .margin_bottom(12)
+            .hexpand(false)
+            .vexpand(false)
+            .build();
+
+        let icon = Image::builder()
+            .file(&instance_config_struct.image_path)
+            .icon_size(IconSize::Inherit)
+            .width_request(192)
+            .height_request(192)
+            .halign(Align::Start)
+            .build();
         icon.set_css_classes(&["card", "rounded"]);
-
-        let name = Label::new(Some(instance_config_struct.name.as_str()));
-        name.set_css_classes(&["title-1"]);
-
-        let version = Label::new(Some(instance_config_struct.version.as_str()));
-        version.set_css_classes(&["title-4"]);
-        version.set_halign(Align::Start);
+        container.append(&icon);
 
         let label_container = Box::builder()
             .orientation(Orientation::Vertical)
@@ -40,9 +46,21 @@ impl InstanceView {
             .halign(Align::Start)
             .margin_start(6)
             .build();
+        container.append(&label_container);
+
+        let name = Label::new(Some(instance_config_struct.name.as_str()));
+        name.set_css_classes(&["title-1"]);
         label_container.append(&name);
+
+        let version = Label::new(Some(instance_config_struct.version.as_str()));
+        version.set_halign(Align::Start);
+        version.set_css_classes(&["title-4"]);
         label_container.append(&version);
 
+        let button_container = Box::new(Orientation::Horizontal, 12);
+        container.append(&button_container);
+
+        // TODO: add kill functionality
         let primary_button = Button::builder()
             .label(if instance_config_struct.downloaded {
                 "Play"
@@ -51,6 +69,20 @@ impl InstanceView {
             })
             .css_classes(["pill", "suggested-action"])
             .build();
+        button_container.append(&primary_button);
+
+        // TODO: add a popup for editing the instance
+        let edit_button = Button::builder()
+            .label("Edit")
+            .css_classes(["pill"])
+            .build();
+        button_container.append(&edit_button);
+
+        let delete_button = Button::builder()
+            .label("Delete")
+            .css_classes(["pill", "destructive-action"])
+            .build();
+        button_container.append(&delete_button);
 
         let primary_button_clone = primary_button.clone();
         let toast_overlay_clone = toast_overlay.clone();
@@ -69,19 +101,11 @@ impl InstanceView {
                 primary_button_clone.set_label("Launching");
 
                 let toast_sender_clone = toast_sender.clone();
-                let instance_config_struct_clone = instance_config_struct.clone();
                 gtk::gio::spawn_blocking(move || {
                     let result = minecraft.launch(true);
                     if let Err(_) = result {
                         toast_sender_clone
                             .send_blocking("Failed to launch the game!".to_string())
-                            .expect("Failed to send message");
-                    } else {
-                        toast_sender_clone
-                            .send_blocking(format!(
-                                "Launched instance {}",
-                                instance_config_struct_clone.name
-                            ))
                             .expect("Failed to send message");
                     }
                 });
@@ -127,17 +151,6 @@ impl InstanceView {
                 }
             ));
         });
-
-        // TODO:add a popup for editing the instance
-        let edit_button = Button::builder()
-            .label("Edit")
-            .css_classes(["pill"])
-            .build();
-
-        let delete_button = Button::builder()
-            .label("Delete")
-            .css_classes(["pill", "destructive-action"])
-            .build();
 
         let delete_button_clone = delete_button.clone();
         let toast_overlay_clone = toast_overlay.clone();
@@ -190,25 +203,6 @@ impl InstanceView {
                 }
             ));
         });
-
-        let button_container = Box::new(Orientation::Horizontal, 12);
-        button_container.append(&primary_button);
-        button_container.append(&edit_button);
-        button_container.append(&delete_button);
-
-        let container = gtk::Box::builder()
-            .orientation(Orientation::Vertical)
-            .spacing(12)
-            .margin_start(12)
-            .margin_end(12)
-            .margin_top(12)
-            .margin_bottom(12)
-            .hexpand(false)
-            .vexpand(false)
-            .build();
-        container.append(&icon);
-        container.append(&label_container);
-        container.append(&button_container);
 
         container
     }

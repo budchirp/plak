@@ -1,5 +1,5 @@
 use adw::{prelude::*, Application, ApplicationWindow, OverlaySplitView, Toast, ToastOverlay};
-use async_channel::Sender;
+use async_channel::{Receiver, Sender};
 use gtk::{
     gdk::Display, style_context_add_provider_for_display, CssProvider, Stack,
     STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -28,40 +28,46 @@ pub struct MainWindow {
 
 impl MainWindow {
     pub fn new(app: &Application) -> Self {
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title(constants::APP_NAME)
-            .default_width(800)
-            .default_height(600)
-            .build();
-
-        let toast_overlay = ToastOverlay::new();
-        let stack_content = Stack::new();
-
         let (sender, receiver) = async_channel::unbounded();
 
         let mut main_window = Self {
-            window,
-            toast_overlay,
-            stack_content,
+            window: ApplicationWindow::builder()
+                .application(app)
+                .title(constants::APP_NAME)
+                .default_width(800)
+                .default_height(600)
+                .build(),
+
+            toast_overlay: ToastOverlay::new(),
+            stack_content: Stack::new(),
+
             sender,
         };
 
-        let main_window_clone = main_window.clone();
+        main_window.signal_receiver(receiver);
+        main_window
+    }
+
+    fn signal_receiver(&mut self, receiver: Receiver<String>) {
+        let mut window = self.clone();
         gtk::glib::spawn_future_local(async move {
             while let Ok(signal_name) = receiver.recv().await {
                 match signal_name.as_str() {
-                    "refresh" => main_window.build_ui(),
+                    "refresh" => window.set_content(),
                     _ => println!("unknown signal"),
                 }
             }
         });
-
-        main_window_clone
     }
 
     pub fn build_ui(&mut self) {
         self.set_css_provider();
+
+        self.set_content();
+        self.window.set_content(Some(&self.toast_overlay));
+    }
+
+    pub fn set_content(&mut self) {
         self.set_stack_content();
 
         let split_view = OverlaySplitView::builder()
@@ -77,23 +83,17 @@ impl MainWindow {
             .build();
 
         self.toast_overlay.set_child(Some(&split_view));
-
-        let _ = &self.window.set_content(Some(&self.toast_overlay));
     }
 
-    pub fn set_stack_content(&mut self) {
+    fn set_stack_content(&mut self) {
         self.stack_content = Stack::new();
-        self.stack_content.set_hexpand(true);
-        self.stack_content.set_vexpand(true);
         self.stack_content.set_halign(gtk::Align::Start);
         self.stack_content.set_valign(gtk::Align::Start);
 
         self.get_instances();
-
-        self.stack_content.queue_draw();
     }
 
-    pub fn get_instances(&self) {
+    fn get_instances(&self) {
         let instances = InstanceConfigManager::get_all();
         match instances {
             Err(_) => {
@@ -116,7 +116,7 @@ impl MainWindow {
         }
     }
 
-    pub fn set_css_provider(&self) {
+    fn set_css_provider(&self) {
         let provider = CssProvider::new();
         provider.load_from_string(include_str!("../ui.css"));
 

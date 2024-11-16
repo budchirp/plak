@@ -23,13 +23,24 @@ impl SidebarPage {
             .stack(&stack_content)
             .build();
 
+        let sidebar_toolbar = ToolbarView::builder().content(&sidebar_content).build();
+
         let sidebar_header_bar_title = WindowTitle::new(constants::APP_NAME, "");
+        let sidebar_header_bar = HeaderBar::builder()
+            .title_widget(&sidebar_header_bar_title)
+            .css_classes(["devel"])
+            .build();
+        sidebar_toolbar.add_top_bar(&sidebar_header_bar);
+
         let sidebar_header_add_button = ToggleButton::builder()
             .icon_name("list-add-symbolic")
             .build();
+        sidebar_header_bar.pack_start(&sidebar_header_add_button);
+
         let sidebar_header_refresh_button = ToggleButton::builder()
             .icon_name("view-refresh-symbolic")
             .build();
+        sidebar_header_bar.pack_end(&sidebar_header_refresh_button);
 
         let window_clone = window.clone();
         let toast_overlay_clone = toast_overlay.clone();
@@ -52,16 +63,6 @@ impl SidebarPage {
             });
         });
 
-        let sidebar_header_bar = HeaderBar::builder()
-            .title_widget(&sidebar_header_bar_title)
-            .css_classes(["devel"])
-            .build();
-        sidebar_header_bar.pack_start(&sidebar_header_add_button);
-        sidebar_header_bar.pack_end(&sidebar_header_refresh_button);
-
-        let sidebar_toolbar = ToolbarView::builder().content(&sidebar_content).build();
-        sidebar_toolbar.add_top_bar(&sidebar_header_bar);
-
-        NavigationPage::new(&sidebar_toolbar, "Sidebar")
+        NavigationPage::new(&sidebar_toolbar, constants::APP_NAME)
     }
 }
