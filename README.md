@@ -1,3 +1,5 @@
+> WARNING: This project is in the development stage. Crashes, panics, and nuclear explosions may occur. Please open an issue if you encounter any. Rust nerds are welcome to submit pull requests, as this is my first Rust project.
+
 <div align="center">
     <h1>plak</h1>
     <h2>A custom Minecraft launcher thats written in Rust, GTK4 and LibAdwaita</h2>
