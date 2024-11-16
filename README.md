@@ -12,5 +12,5 @@
 </div>
 
 <div align="center">
-    <img alt="Plak" src="https://raw.githubusercontent.com/budchirp/plak/main/.github/screenshots/plak.jpg" />
+    <img alt="Plak" src="https://raw.githubusercontent.com/budchirp/plak/main/.github/screenshots/plak.png" />
 </div>
