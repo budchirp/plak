@@ -20,12 +20,12 @@
 - [x] Main UI
 - [x] Download Minecraft
 - [x] Multiple instances
-- [] App icon
-- [] Add kill button
-- [] Add popular modloaders (Fabric, Forge)
-- [] Fetch version data in a new thread
-- [] Editing instance
-- [] Adding image to instance
-- [] Settings/Preferences page
-- [] Profile management
-- [] Maybe mobile support
+- [ ] App icon
+- [ ] Add kill button
+- [ ] Add popular modloaders (Fabric, Forge)
+- [ ] Fetch version data in a new thread
+- [ ] Editing instance
+- [ ] Adding image to instance
+- [ ] Settings/Preferences page
+- [ ] Profile management
+- [ ] Maybe mobile support
