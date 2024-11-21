@@ -2,6 +2,7 @@ use app::App;
 use init::Init;
 
 mod app;
+mod command_line;
 mod config;
 mod constants;
 mod init;

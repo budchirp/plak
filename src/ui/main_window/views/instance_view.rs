@@ -7,6 +7,7 @@ use gtk::{
 };
 
 use crate::{
+    command_line::ProcessStatus,
     config::instance_config::{InstanceConfigManager, InstanceConfigStruct},
     minecraft::Minecraft,
 };
@@ -60,12 +61,23 @@ impl InstanceView {
         let button_container = Box::new(Orientation::Horizontal, 12);
         container.append(&button_container);
 
+        #[derive(PartialEq, Eq, Copy, Clone)]
+        enum ButtonFunction {
+            Play,
+            Download,
+        }
+
         // TODO: add kill functionality
+        let button_function = if instance_config_struct.downloaded {
+            ButtonFunction::Play
+        } else {
+            ButtonFunction::Download
+        };
+
         let primary_button = Button::builder()
-            .label(if instance_config_struct.downloaded {
-                "Play"
-            } else {
-                "Download"
+            .label(match button_function {
+                ButtonFunction::Play => "Play",
+                ButtonFunction::Download => "Download",
             })
             .css_classes(["pill", "suggested-action"])
             .build();
@@ -88,7 +100,7 @@ impl InstanceView {
         let toast_overlay_clone = toast_overlay.clone();
         let instance_config_struct_clone = instance_config_struct.clone();
         let sender_clone = sender.clone();
-        primary_button.connect_clicked(move |_| {
+        primary_button.clone().connect_clicked(move |_| {
             let toast_overlay = &toast_overlay_clone;
             let instance_config_struct = &instance_config_struct_clone;
             let sender = &sender_clone;
@@ -97,48 +109,80 @@ impl InstanceView {
 
             let (toast_sender, toast_receiver) = async_channel::bounded(1);
 
-            if instance_config_struct.downloaded {
-                primary_button_clone.set_label("Launching");
+            match button_function {
+                ButtonFunction::Play => {
+                    primary_button_clone.set_label("Launching");
+                    primary_button_clone.set_sensitive(true);
 
-                let toast_sender_clone = toast_sender.clone();
-                gtk::gio::spawn_blocking(move || {
-                    let result = minecraft.launch(true);
-                    if let Err(_) = result {
-                        toast_sender_clone
-                            .send_blocking("Failed to launch the game!".to_string())
-                            .expect("Failed to send message");
-                    }
-                });
+                    let toast_sender_clone = toast_sender.clone();
+                    gtk::gio::spawn_blocking(move || {
+                        let result = minecraft.launch(true, "steve", None, None);
+                        match result {
+                            Err(_) => {
+                                toast_sender_clone
+                                    .send_blocking("Failed to launch the game!".to_string())
+                                    .expect("Failed to send message");
+                            }
 
-                primary_button_clone.set_label("Play");
-            } else {
-                primary_button_clone.set_label("Downloading");
+                            Ok(command_line) => command_line.monitor(move |status| match status {
+                                ProcessStatus::Error(error) => {
+                                    toast_sender_clone
+                                        .send_blocking(format!(
+                                            "Failed to launch the game!\n{}",
+                                            error
+                                        ))
+                                        .expect("Failed to send message");
+                                }
 
-                let sender_clone = sender.clone();
-                let instance_config_struct_clone = instance_config_struct.clone();
-                let toast_sender_clone = toast_sender.clone();
-                gtk::gio::spawn_blocking(move || {
-                    let result = minecraft.download(instance_config_struct_clone.version.as_str());
-                    if let Err(_) = result {
+                                ProcessStatus::Done => {
+                                    toast_sender_clone
+                                        .send_blocking("nigger".to_string())
+                                        .expect("Failed to send message");
+                                }
+
+                                // TODO: add kill functionality if this shit is even working
+                                ProcessStatus::Running => {
+                                    toast_sender_clone
+                                        .send_blocking("Launched the game".to_string())
+                                        .expect("Failed to send message");
+                                }
+                            }),
+                        }
+                    });
+
+                    primary_button_clone.set_label("Play");
+                }
+
+                ButtonFunction::Download => {
+                    primary_button_clone.set_label("Downloading");
+
+                    let sender_clone = sender.clone();
+                    let instance_config_struct_clone = instance_config_struct.clone();
+                    let toast_sender_clone = toast_sender.clone();
+                    gtk::gio::spawn_blocking(move || {
+                        let result =
+                            minecraft.download(instance_config_struct_clone.version.as_str());
+                        if let Err(_) = result {
+                            toast_sender_clone
+                                .send_blocking(format!(
+                                    "Failed to download {}",
+                                    instance_config_struct_clone.name
+                                ))
+                                .expect("Failed to send message");
+                        }
+
                         toast_sender_clone
                             .send_blocking(format!(
-                                "Failed to download {}",
+                                "Downloaded instance {}",
                                 instance_config_struct_clone.name
                             ))
                             .expect("Failed to send message");
-                    }
 
-                    toast_sender_clone
-                        .send_blocking(format!(
-                            "Downloaded instance {}",
-                            instance_config_struct_clone.name
-                        ))
-                        .expect("Failed to send message");
-
-                    sender_clone
-                        .send_blocking("refresh".to_string())
-                        .expect("Failed to send message");
-                });
+                        sender_clone
+                            .send_blocking("refresh".to_string())
+                            .expect("Failed to send message");
+                    });
+                }
             }
 
             glib::spawn_future_local(clone!(

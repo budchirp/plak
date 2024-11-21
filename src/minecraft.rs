@@ -8,8 +8,10 @@ use std::{
     process::Command,
     sync::Arc,
 };
+use uuid::Uuid;
 
 use crate::{
+    command_line::CommandLine,
     config::{
         instance_config::InstanceConfigManager,
         user_config::{UserConfigManager, UserConfigStruct},
@@ -108,16 +110,18 @@ impl Minecraft {
     pub fn new(slug: &str) -> Self {
         let user_config_struct = UserConfigManager::new().get();
 
-        let instance_config_manager = InstanceConfigManager::new(&slug);
-
         Self {
             network: Network::new(),
 
             user_config_struct: user_config_struct.clone(),
 
-            instance_config_manager: instance_config_manager.clone(),
+            instance_config_manager: InstanceConfigManager::new(&slug),
 
-            game_dir: user_config_struct.data_dir.join("instances").join(&slug).join("minecraft"),
+            game_dir: user_config_struct
+                .data_dir
+                .join("instances")
+                .join(&slug)
+                .join("minecraft"),
             clients_dir: user_config_struct.data_dir.join("clients"),
             libraries_dir: user_config_struct.data_dir.join("libraries"),
             natives_dir: user_config_struct.data_dir.join("natives"),
@@ -152,8 +156,6 @@ impl Minecraft {
     }
 
     fn get_classpath(&self) -> String {
-        let mut classpath = String::new();
-
         let instance_config_struct = self.instance_config_manager.get();
 
         let client_jar = self
@@ -162,19 +164,23 @@ impl Minecraft {
             .to_string_lossy()
             .to_string();
 
+        let mut classpath = String::new();
         classpath.push_str(&format!("{}:", &client_jar));
 
         let libraries_dir = self.libraries_dir.join(&instance_config_struct.version);
         self.collect_jar_dirs(&libraries_dir, &mut classpath);
 
-        if classpath.ends_with(':') {
-            classpath.pop();
-        }
-
+        classpath.trim_end_matches(':').to_string();
         classpath
     }
 
-    fn craft_arguments(&self, offline: bool) -> Vec<String> {
+    fn craft_arguments(
+        &self,
+        offline: bool,
+        username: &str,
+        token: Option<&str>,
+        uuid: Option<&str>,
+    ) -> Vec<String> {
         let instance_config_struct = self.instance_config_manager.get();
 
         let natives_dir = self
@@ -189,15 +195,17 @@ impl Minecraft {
             .to_string();
         let game_dir = self.game_dir.to_string_lossy().to_string();
 
+        let offline_uuid = Uuid::new_v4().to_string();
         let game_args = vec![
             "--version",
             &instance_config_struct.version,
             "--username",
-            &self.user_config_struct.username,
+            username,
             "--uuid",
-            &self.user_config_struct.uuid,
+            // TODO: temporary
+            uuid.unwrap_or(offline_uuid.as_str()),
             "--accessToken",
-            &self.user_config_struct.token,
+            token.unwrap_or("gibberish"),
             "--userType",
             if offline { "legacy" } else { "mojang" },
             "--assetIndex",
@@ -219,13 +227,28 @@ impl Minecraft {
         ];
 
         args.extend(game_args.iter().map(|&arg| arg.to_string()));
-
         args
     }
 
-    pub fn launch(&self, offline: bool) -> Result<(), Box<dyn Error>> {
-        let mut command = Command::new(&self.user_config_struct.java_bin);
-        command.args(&self.craft_arguments(offline));
+    pub fn launch(
+        &self,
+        offline: bool,
+        // TODO: Instead of getting these like that, get profile id and read from toml
+        username: &str,
+        token: Option<&str>,
+        uuid: Option<&str>,
+    ) -> Result<CommandLine, Box<dyn Error>> {
+        let mut binary = self.user_config_struct.java_bin.clone();
+        if self.user_config_struct.use_gamemoderun {
+            binary = CommandLine::get_path("gamemoderun");
+        }
+
+        let mut command = Command::new(binary);
+        if self.user_config_struct.use_gamemoderun {
+            command.arg(&self.user_config_struct.java_bin);
+        }
+
+        command.args(&self.craft_arguments(offline, username, token, uuid));
 
         if self.user_config_struct.use_dedicated_gpu {
             command
@@ -234,12 +257,7 @@ impl Minecraft {
                 .env("__GLX_VENDOR_LIBRARY_NAME", "nvidia");
         }
 
-        let status = command.status()?;
-        if status.success() {
-            Ok(())
-        } else {
-            Err(format!("Status code: {}", &status.code().unwrap()).into())
-        }
+        Ok(CommandLine::new(command.spawn()?))
     }
 
     pub fn download(&self, version: &str) -> Result<(), Box<dyn Error>> {
@@ -252,74 +270,9 @@ impl Minecraft {
             .network
             .fetch::<VersionDetails>(&selected_version.url)?;
 
-        self.network.download(
-            &version_details.downloads.client.url,
-            self.clients_dir.join(&format!("client-{}.jar", &version)),
-        )?;
-
-        let libraries_dir = self.libraries_dir.join(&version);
-        let natives_dir = self.natives_dir.join(&version);
-        fs::create_dir_all(&libraries_dir)?;
-        fs::create_dir_all(&natives_dir)?;
-        for library in version_details.libraries {
-            if let Some(artifact) = library.downloads.artifact {
-                let path = libraries_dir.join(&artifact.path);
-                fs::create_dir_all(path.parent().unwrap())?;
-
-                self.network.download(&artifact.url, path)?;
-            };
-
-            if let Some(classifiers) = library.downloads.classifiers {
-                if let Some(natives_linux) = classifiers.natives_linux {
-                    let path =
-                        &natives_dir.join(&Path::new(&natives_linux.url).file_name().unwrap());
-                    self.network.download(&natives_linux.url, path.clone())?;
-
-                    Command::new("unzip")
-                        .arg("-o")
-                        .arg(&path)
-                        .arg("-d")
-                        .arg(&natives_dir)
-                        .status()
-                        .expect(&format!("Failed to unzip {}", path.to_str().unwrap()));
-                    fs::remove_file(&path)
-                        .expect(&format!("Failed to remove {}", path.to_str().unwrap()));
-                }
-            }
-        }
-
-        let assets_dir = self.assets_dir.join(&version_details.asset_index.id);
-        let objects_dir = assets_dir.join("objects");
-        let indexes_dir = assets_dir.join("indexes");
-        fs::create_dir_all(&objects_dir)?;
-        fs::create_dir_all(&indexes_dir)?;
-
-        self.network.download(
-            &version_details.asset_index.url,
-            indexes_dir.join(&format!("{}.json", &version_details.asset_index.id)),
-        )?;
-
-        let asset_index = self
-            .network
-            .fetch::<AssetIndexFile>(&version_details.asset_index.url)
-            .unwrap();
-
-        let asset_list: Vec<(String, AssetObject)> = asset_index.objects.into_iter().collect();
-        let network = Arc::new(self.network.clone());
-        let objects_dir = Arc::new(objects_dir);
-        asset_list.par_iter().for_each(|(_, asset)| {
-            let asset_url = format!(
-                "https://resources.download.minecraft.net/{}/{}",
-                &asset.hash[..2],
-                asset.hash
-            );
-            let asset_path = objects_dir.join(&asset.hash[..2]);
-            fs::create_dir_all(&asset_path).unwrap();
-
-            if let Err(e) = network.download(&asset_url, asset_path.join(&asset.hash)) {
-                eprintln!("Failed to download {}: {}", asset_url, e);
-            }
-        });
+        self.download_client(&version_details, version)?;
+        self.download_libraries(&version_details, version)?;
+        self.download_assets(&version_details)?;
 
         let mut new_instance_config_struct = self.instance_config_manager.get();
         new_instance_config_struct.downloaded = true;
@@ -330,6 +283,109 @@ impl Minecraft {
         self.instance_config_manager
             .set(&new_instance_config_struct)
             .expect(&format!("Failed to create instance.toml for {}", self.slug));
+
+        Ok(())
+    }
+
+    fn download_client(
+        &self,
+        details: &VersionDetails,
+        version: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        self.network.download(
+            &details.downloads.client.url,
+            self.clients_dir.join(format!("client-{}.jar", version)),
+        )
+    }
+
+    fn download_libraries(
+        &self,
+        details: &VersionDetails,
+        version: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let libraries_dir = self.libraries_dir.join(version);
+        let natives_dir = self.natives_dir.join(version);
+
+        fs::create_dir_all(&libraries_dir)?;
+        fs::create_dir_all(&natives_dir)?;
+
+        let network = Arc::new(self.network.clone());
+        let libraries_dir = Arc::new(libraries_dir);
+        let natives_dir = Arc::new(natives_dir);
+
+        details.libraries.par_iter().for_each(|library| {
+            if let Some(artifact) = &library.downloads.artifact {
+                let path = libraries_dir.join(&artifact.path);
+                fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+                if let Err(error) = network.download(&artifact.url, path) {
+                    eprintln!("Failed to download {}: {}", &artifact.url, error);
+                }
+            }
+
+            if let Some(classifiers) = &library.downloads.classifiers {
+                if let Some(natives_linux) = &classifiers.natives_linux {
+                    let zip_file =
+                        natives_dir.join(&Path::new(&natives_linux.url).file_name().unwrap());
+
+                    if let Err(error) = network.download(&natives_linux.url, zip_file.clone()) {
+                        eprintln!(
+                            "Failed to download {}: {}",
+                            zip_file.to_path_buf().to_string_lossy(),
+                            error
+                        );
+                    }
+
+                    Command::new("unzip")
+                        .arg("-o")
+                        .arg(&zip_file)
+                        .arg("-d")
+                        .arg(natives_dir.clone().to_path_buf())
+                        .status()
+                        .expect(&format!("Failed to unzip {}", zip_file.to_string_lossy()));
+                    fs::remove_file(&zip_file)
+                        .expect(&format!("Failed to remove {}", zip_file.to_string_lossy()));
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    fn download_assets(&self, details: &VersionDetails) -> Result<(), Box<dyn Error>> {
+        let assets_dir = self.assets_dir.join(&details.asset_index.id);
+        let objects_dir = assets_dir.join("objects");
+        let indexes_dir = assets_dir.join("indexes");
+
+        fs::create_dir_all(&objects_dir)?;
+        fs::create_dir_all(&indexes_dir)?;
+
+        let index_path = indexes_dir.join(format!("{}.json", &details.asset_index.id));
+        self.network
+            .download(&details.asset_index.url, index_path)?;
+
+        let asset_index: AssetIndexFile = self.network.fetch(&details.asset_index.url)?;
+        let network = Arc::new(self.network.clone());
+        let objects_dir = Arc::new(objects_dir);
+
+        asset_index.objects.par_iter().for_each(|(_, asset)| {
+            let asset_url = format!(
+                "https://resources.download.minecraft.net/{}/{}",
+                &asset.hash[..2],
+                asset.hash
+            );
+            let asset_path = objects_dir.join(&asset.hash[..2]).join(&asset.hash);
+
+            fs::create_dir_all(asset_path.parent().unwrap()).unwrap();
+
+            if let Err(error) = network.download(&asset_url, asset_path.clone()) {
+                eprintln!(
+                    "Failed to download {}: {}",
+                    asset_path.to_string_lossy(),
+                    error
+                );
+            }
+        });
 
         Ok(())
     }

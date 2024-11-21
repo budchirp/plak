@@ -14,3 +14,18 @@
 <div align="center">
     <img alt="Plak" src="https://raw.githubusercontent.com/budchirp/plak/main/.github/screenshots/plak.png" />
 </div>
+
+## TODO
+
+- [x] Main UI
+- [x] Download Minecraft
+- [x] Multiple instances
+- [] App icon
+- [] Add kill button
+- [] Add popular modloaders (Fabric, Forge)
+- [] Fetch version data in a new thread
+- [] Editing instance
+- [] Adding image to instance
+- [] Settings/Preferences page
+- [] Profile management
+- [] Maybe mobile support

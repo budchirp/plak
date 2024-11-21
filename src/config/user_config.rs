@@ -1,10 +1,9 @@
 use core::str;
-use std::{error::Error, fs, path::PathBuf, process::Command};
+use std::{error::Error, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::toml::Toml;
+use crate::{command_line::CommandLine, toml::Toml};
 
 use super::Config;
 
@@ -13,10 +12,6 @@ pub struct UserConfigStruct {
     pub is_initial_setup_done: bool,
 
     pub data_dir: PathBuf,
-
-    pub username: String,
-    pub uuid: String,
-    pub token: String,
 
     pub max_memory: String,
     pub initial_memory: String,
@@ -64,25 +59,10 @@ impl UserConfigManager {
 
                 data_dir: dirs::data_dir().unwrap(),
 
-                username: "steve".to_string(),
-                uuid: Uuid::new_v4().to_string(),
-                token: "gibberish".to_string(),
-
                 max_memory: "2G".to_string(),
                 initial_memory: "1G".to_string(),
 
-                // TODO: create a CommandLine class that gets the actual url of the command
-                // and executes it in another thread
-                java_bin: Command::new("which")
-                    .arg("java")
-                    .output()
-                    .map(|output| {
-                        str::from_utf8(&output.stdout)
-                            .unwrap_or("java")
-                            .trim()
-                            .to_string()
-                    })
-                    .unwrap_or_else(|_| "java".to_string()),
+                java_bin: CommandLine::get_path("java"),
                 jvm_args: "".to_string(),
 
                 use_dedicated_gpu: false,
