@@ -1,0 +1,36 @@
+[versions]
+compose-multiplatform = "1.7.0"
+kotlin = "2.1.0"
+
+lifecycle = "2.8.2"
+
+compose = "1.7.3"
+
+kotlin-serialization = "1.8.0"
+
+ktor = "2.3.10"
+
+[libraries]
+compose-navigation = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version = "2.8.0-alpha10" }
+compose-material-icons = { group = "org.jetbrains.compose.material", name = "material-icons-core", version.ref = "compose" }
+compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "compose" }
+
+androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+
+kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlin-serialization" }
+
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-engine = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+[bundles]
+ktor = ["ktor-client-core", "ktor-client-engine", "ktor-client-logging", "ktor-client-content-negotiation", "ktor-serialization-kotlinx-json"]
+
+[plugins]
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
