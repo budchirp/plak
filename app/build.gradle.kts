@@ -56,7 +56,7 @@ compose.desktop {
         mainClass = "me.budchirp.plak.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Deb, TargetFormat.Exe, TargetFormat.AppImage)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "me.budchirp.plak"
             packageVersion = "1.0.0"
 
