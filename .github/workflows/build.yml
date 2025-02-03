@@ -31,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-package
-          path: build/compose/binaries/main/deb/
+          path: app/build/compose/binaries/main/deb/
 
   build-windows:
     runs-on: windows-latest
@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Build Windows package
         run: .\gradlew.bat packageExe
@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-package
-          path: build/compose/binaries/main/exe/
+          path: app/build/compose/binaries/main/exe/
 
   build-macos:
     runs-on: macos-latest
@@ -64,7 +64,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -76,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-package
-          path: build/compose/binaries/main/dmg/
+          path: app/build/compose/binaries/main/dmg/
