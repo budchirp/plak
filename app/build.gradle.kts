@@ -57,20 +57,22 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Deb, TargetFormat.Exe)
-            packageName = "me.budchirp.plak"
+            packageName = "plak"
             packageVersion = "1.0.0"
 
-//            val iconsRoot = project.file("desktop-icons")
+            val iconsRoot = project.file("icons")
             macOS {
-//                iconFile.set(iconsRoot.resolve("icon-mac.icns"))
+                iconFile.set(iconsRoot.resolve("icon-macos.icns"))
             }
+
             windows {
-//                iconFile.set(iconsRoot.resolve("icon-windows.ico"))
+                iconFile.set(iconsRoot.resolve("icon-windows.ico"))
                 menuGroup = "plak"
                 upgradeUuid = "297b565f-9f0d-40e6-9116-7ea95f71cac7"
             }
+
             linux {
-//                iconFile.set(iconsRoot.resolve("icon-linux.png"))
+                iconFile.set(iconsRoot.resolve("icon-linux.png"))
             }
         }
     }

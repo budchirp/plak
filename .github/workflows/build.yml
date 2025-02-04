@@ -24,7 +24,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Linux package
+      - name: Build Linux deb
         run: ./gradlew packageDeb
 
       - name: Build Linux jar
@@ -54,23 +54,14 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Build Windows package
+      - name: Build Windows exe
         run: .\gradlew.bat packageExe
-
-      - name: Build Windows jar
-        run: ./gradlew packageUberJarForCurrentOS
 
       - name: Upload Windows exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe
           path: app/build/compose/binaries/main/exe/
-
-      - name: Upload Windows jar artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-jar
-          path: app/build/compose/jars/
 
   build-macos:
     runs-on: macos-latest
