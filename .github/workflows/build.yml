@@ -27,11 +27,20 @@ jobs:
       - name: Build Linux package
         run: ./gradlew packageDeb
 
-      - name: Upload Linux artifact
+      - name: Build Linux jar
+        run: ./gradlew packageUberJarForCurrentOS
+
+      - name: Upload Linux deb artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-package
+          name: linux-deb
           path: app/build/compose/binaries/main/deb/
+
+      - name: Upload Linux jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-jar
+          path: app/build/compose/jars/
 
   build-windows:
     runs-on: windows-latest
@@ -48,11 +57,20 @@ jobs:
       - name: Build Windows package
         run: .\gradlew.bat packageExe
 
-      - name: Upload Windows artifact
+      - name: Build Windows jar
+        run: ./gradlew packageUberJarForCurrentOS
+
+      - name: Upload Windows exe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-package
+          name: windows-exe
           path: app/build/compose/binaries/main/exe/
+
+      - name: Upload Windows jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-jar
+          path: app/build/compose/jars/
 
   build-macos:
     runs-on: macos-latest
@@ -72,8 +90,17 @@ jobs:
       - name: Build macOS package
         run: ./gradlew packageDmg
 
-      - name: Upload macOS artifact
+      - name: Build macOS jar
+        run: ./gradlew packageUberJarForCurrentOS
+
+      - name: Upload macOS dmg artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-package
+          name: macos-dmg
           path: app/build/compose/binaries/main/dmg/
+
+      - name: Upload macOS jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-jar
+          path: app/build/compose/jars/
