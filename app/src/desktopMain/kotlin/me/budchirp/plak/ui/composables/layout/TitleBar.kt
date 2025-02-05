@@ -1,4 +1,4 @@
-package me.budchirp.plak.ui.layout
+package me.budchirp.plak.ui.composables.layout
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

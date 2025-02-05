@@ -1,4 +1,4 @@
-package me.budchirp.plak.ui.layout
+package me.budchirp.plak.ui.composables.layout
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize

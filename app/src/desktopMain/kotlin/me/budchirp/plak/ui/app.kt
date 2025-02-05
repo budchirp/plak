@@ -2,9 +2,9 @@ package me.budchirp.plak.ui
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import me.budchirp.plak.ui.composables.layout.AppLayout
+import me.budchirp.plak.ui.composables.layout.AppWindow
 import me.budchirp.plak.ui.composition.ProvideNavController
-import me.budchirp.plak.ui.layout.AppLayout
-import me.budchirp.plak.ui.layout.AppWindow
 import me.budchirp.plak.ui.navigation.AppNavHost
 import me.budchirp.plak.ui.theme.AppTheme
 

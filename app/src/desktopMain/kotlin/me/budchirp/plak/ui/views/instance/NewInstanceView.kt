@@ -1,4 +1,4 @@
-package me.budchirp.plak.ui.views
+package me.budchirp.plak.ui.views.instance
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,12 +45,7 @@ fun String.toSlug(): String {
 fun NewInstanceView() {
     val viewModel = viewModel { NewInstanceViewModel() }
 
-    var versionSearch by remember { mutableStateOf("") }
-
     var versions by remember { mutableStateOf<List<String>?>(null) }
-
-    var showVersionDropdown by remember { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         scope.launch {
@@ -80,10 +75,12 @@ fun NewInstanceView() {
         }
 
         item {
+            var showVersionDropdown by remember { mutableStateOf(false) }
             Column {
                 ExposedDropdownMenuBox(expanded = showVersionDropdown, onExpandedChange = {
                     showVersionDropdown = !showVersionDropdown
                 }) {
+                    var versionSearch by remember { mutableStateOf("") }
                     OutlinedTextField(
                         maxLines = 1,
                         modifier = Modifier.menuAnchor().fillMaxWidth(),

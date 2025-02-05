@@ -1,4 +1,4 @@
-package me.budchirp.plak.ui.views
+package me.budchirp.plak.ui.views.account
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

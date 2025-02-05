@@ -2,8 +2,10 @@ package me.budchirp.plak.data.manager
 
 import me.budchirp.plak.data.model.Instance
 import me.budchirp.plak.utils.JSON
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteRecursively
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
@@ -43,5 +45,11 @@ class InstanceManager() {
 
         val instanceConfigPath = instanceDir.resolve("config.json")
         instanceConfigPath.writeText(JSON.stringify(Instance.serializer(), instance))
+    }
+
+    @OptIn(ExperimentalPathApi::class)
+    fun delete(slug: String) {
+        val instanceDir = instancesDir.resolve(slug)
+        instanceDir.deleteRecursively()
     }
 }

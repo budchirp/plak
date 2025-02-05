@@ -12,3 +12,9 @@
 <div align="center">
     <img alt="Plak" src="https://raw.githubusercontent.com/budchirp/plak/main/.github/screenshots/plak.png" />
 </div>
+
+## TODO
+
+- [ ] Add settings page
+- [ ] Add mod support
+- [ ] Add more options to instance edit page

@@ -1,4 +1,4 @@
-package me.budchirp.plak.ui.layout
+package me.budchirp.plak.ui.composables.layout
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,7 +45,6 @@ import me.budchirp.plak.ui.navigation.Route
 
 @Composable
 fun WindowScope.Drawer(content: @Composable () -> Unit) {
-
     PermanentNavigationDrawer(drawerContent = {
         PermanentDrawerSheet(
             modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction = 0.35f),

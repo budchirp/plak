@@ -9,9 +9,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.budchirp.plak.data.manager.InstanceManager
-import me.budchirp.plak.data.model.Instance
 
-class NewInstanceViewModel : ViewModel() {
+class EditInstanceViewModel : ViewModel() {
     var name by mutableStateOf("")
         private set
     val nameError by derivedStateOf {
@@ -31,33 +30,12 @@ class NewInstanceViewModel : ViewModel() {
         }
     }
 
-    var version by mutableStateOf("")
-        private set
-    val versionError by derivedStateOf {
-        when (true) {
-            version.isEmpty() -> true
-            (version.length < 3) -> true
-            (version.length > 64) -> true
-            else -> false
-        }
-    }
-    val versionErrorMessage by derivedStateOf {
-        when (true) {
-            version.isEmpty() -> "Version cannot be empty"
-            else -> ""
-        }
-    }
-
     val error by derivedStateOf {
-        nameError || versionError
+        nameError
     }
 
     fun updateName(name: String) {
         this.name = name
-    }
-
-    fun updateVersion(version: String) {
-        this.version = version
     }
 
     fun submit(slug: String, onSuccess: () -> Unit) {
@@ -65,10 +43,9 @@ class NewInstanceViewModel : ViewModel() {
             viewModelScope.launch(Dispatchers.IO) {
                 val instanceManager = InstanceManager()
                 instanceManager.set(
-                    instance = Instance().copy(
+                    instance = instanceManager.get(slug).copy(
                         slug = slug,
-                        name = name,
-                        version = version
+                        name = name
                     )
                 )
             }

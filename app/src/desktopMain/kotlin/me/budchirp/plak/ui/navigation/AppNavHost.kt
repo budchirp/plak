@@ -6,13 +6,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
+import me.budchirp.plak.ui.composables.layout.Layout
 import me.budchirp.plak.ui.composition.LocalNavController
-import me.budchirp.plak.ui.layout.Layout
-import me.budchirp.plak.ui.views.AccountsView
-import me.budchirp.plak.ui.views.InstanceView
-import me.budchirp.plak.ui.views.NewAccountView
-import me.budchirp.plak.ui.views.NewInstanceView
 import me.budchirp.plak.ui.views.SettingsView
+import me.budchirp.plak.ui.views.account.AccountsView
+import me.budchirp.plak.ui.views.account.NewAccountView
+import me.budchirp.plak.ui.views.instance.EditInstanceView
+import me.budchirp.plak.ui.views.instance.InstanceView
+import me.budchirp.plak.ui.views.instance.NewInstanceView
 
 abstract class Route() {
     abstract val id: String
@@ -23,6 +24,13 @@ abstract class Route() {
         override val id: String = "instance",
         override val title: String = "Instance",
         val slug: String? = null
+    ) : Route()
+
+    @Serializable
+    data class EditInstance(
+        override val id: String = "edit-instance",
+        override val title: String = "Edit instance",
+        val slug: String
     ) : Route()
 
     @Serializable
@@ -45,9 +53,20 @@ fun WindowScope.AppNavHost(onClose: () -> Unit) {
 
     NavHost(navController = navController, startDestination = Route.Instance()) {
         composable<Route.Instance> { backStackEntry ->
-            Layout(route = Route.Instance(), onClose = onClose) {
-                val route = backStackEntry.toRoute<Route.Instance>()
-                InstanceView(route.slug)
+            val route = backStackEntry.toRoute<Route.Instance>()
+            val slug = route.slug
+
+            Layout(route = Route.Instance(slug = slug), onClose = onClose) {
+                InstanceView(slug)
+            }
+        }
+
+        composable<Route.EditInstance> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.Instance>()
+            val slug = route.slug!!
+
+            Layout(route = Route.EditInstance(slug = slug), onClose = onClose) {
+                EditInstanceView(slug)
             }
         }
 

@@ -3,7 +3,9 @@ package me.budchirp.plak.data.manager
 import me.budchirp.plak.CONFIG_FILE
 import me.budchirp.plak.data.model.Account
 import me.budchirp.plak.utils.JSON
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteExisting
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
 import kotlin.io.path.listDirectoryEntries
@@ -31,5 +33,10 @@ class AccountManager {
 
     fun set(account: Account) {
         accountsDir.resolve("${account.username}.json").writeText(JSON.stringify(Account.serializer(), account))
+    }
+
+    @OptIn(ExperimentalPathApi::class)
+    fun delete(account: Account) {
+        accountsDir.resolve("${account.username}.json").deleteExisting()
     }
 }
