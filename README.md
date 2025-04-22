@@ -13,8 +13,13 @@
     <img alt="Plak" src="https://raw.githubusercontent.com/budchirp/plak/main/.github/screenshots/plak.png" />
 </div>
 
-## TODO
+## Features
 
-- [ ] Add settings page
-- [ ] Add mod support
-- [ ] Add more options to instance edit page
+- **Cross-platform**
+- **Customizable**
+- **Lightweight**: Minimizes disk usage
+- **Fast**
+- **Open-source**
+- **Easy to use**
+- **Multi-version support**
+- **Mod support**: Supports Fabric

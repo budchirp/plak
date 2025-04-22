@@ -10,8 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.budchirp.plak.data.manager.InstanceManager
 
-class EditInstanceViewModel : ViewModel() {
-    var name by mutableStateOf("")
+class EditInstanceViewModel(private val slug: String) : ViewModel() {
+    val instanceManager = InstanceManager()
+    val instance = instanceManager.get(slug)
+
+    var name by mutableStateOf(instance.name)
         private set
     val nameError by derivedStateOf {
         when (true) {
@@ -41,7 +44,6 @@ class EditInstanceViewModel : ViewModel() {
     fun submit(slug: String, onSuccess: () -> Unit) {
         if (!error) {
             viewModelScope.launch(Dispatchers.IO) {
-                val instanceManager = InstanceManager()
                 instanceManager.set(
                     instance = instanceManager.get(slug).copy(
                         slug = slug,

@@ -25,7 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import me.budchirp.plak.data.remote.manager.MinecraftManager
+import me.budchirp.plak.data.manager.MinecraftManager
+import me.budchirp.plak.data.model.LoaderType
 import me.budchirp.plak.ui.composition.LocalNavController
 import me.budchirp.plak.ui.composition.LocalSnackbarHostState
 import me.budchirp.plak.ui.navigation.Route
@@ -116,6 +117,48 @@ fun NewInstanceView() {
 
                         if (versions?.isEmpty() ?: true) {
                             DropdownMenuItem(text = { Text(text = "Loading...") }, onClick = {})
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            var showLoaderDropdown by remember { mutableStateOf(false) }
+            Column {
+                ExposedDropdownMenuBox(expanded = showLoaderDropdown, onExpandedChange = {
+                    showLoaderDropdown = !showLoaderDropdown
+                }) {
+                    OutlinedTextField(
+                        maxLines = 1,
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        value = viewModel.loader,
+                        onValueChange = {
+                        },
+                        readOnly = true,
+                        label = { Text(text = "Loader") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showLoaderDropdown)
+                        },
+                        isError = viewModel.loaderError, supportingText = {
+                            if (viewModel.loaderError) {
+                                Text(text = viewModel.loaderErrorMessage)
+                            }
+                        }
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = showLoaderDropdown,
+                        onDismissRequest = {
+                            showLoaderDropdown = false
+                        }
+                    ) {
+                        LoaderType.entries.forEach {
+                            DropdownMenuItem(text = { Text(text = it.type) }, onClick = {
+                                viewModel.updateLoader(it.name)
+
+                                showLoaderDropdown = false
+                            })
                         }
                     }
                 }

@@ -10,6 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.budchirp.plak.data.manager.InstanceManager
 import me.budchirp.plak.data.model.Instance
+import me.budchirp.plak.data.model.Loader
+import me.budchirp.plak.data.model.LoaderType
 
 class NewInstanceViewModel : ViewModel() {
     var name by mutableStateOf("")
@@ -36,14 +38,27 @@ class NewInstanceViewModel : ViewModel() {
     val versionError by derivedStateOf {
         when (true) {
             version.isEmpty() -> true
-            (version.length < 3) -> true
-            (version.length > 64) -> true
             else -> false
         }
     }
     val versionErrorMessage by derivedStateOf {
         when (true) {
             version.isEmpty() -> "Version cannot be empty"
+            else -> ""
+        }
+    }
+
+    var loader by mutableStateOf("")
+        private set
+    val loaderError by derivedStateOf {
+        when (true) {
+            loader.isEmpty() -> true
+            else -> false
+        }
+    }
+    val loaderErrorMessage by derivedStateOf {
+        when (true) {
+            loader.isEmpty() -> "Loader cannot be empty"
             else -> ""
         }
     }
@@ -60,6 +75,10 @@ class NewInstanceViewModel : ViewModel() {
         this.version = version
     }
 
+    fun updateLoader(loader: String) {
+        this.loader = loader
+    }
+
     fun submit(slug: String, onSuccess: () -> Unit) {
         if (!error) {
             viewModelScope.launch(Dispatchers.IO) {
@@ -68,7 +87,10 @@ class NewInstanceViewModel : ViewModel() {
                     instance = Instance().copy(
                         slug = slug,
                         name = name,
-                        version = version
+                        version = version,
+                        loader = Loader().copy(
+                            type = LoaderType.valueOf(loader),
+                        )
                     )
                 )
             }

@@ -12,7 +12,7 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
-class InstanceManager() {
+class InstanceManager {
     private val configManager = ConfigManager()
 
     private val config = configManager.get()

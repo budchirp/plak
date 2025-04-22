@@ -28,8 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.budchirp.plak.data.manager.InstanceManager
+import me.budchirp.plak.data.manager.MinecraftManager
 import me.budchirp.plak.data.model.Instance
-import me.budchirp.plak.data.remote.manager.MinecraftManager
 import me.budchirp.plak.ui.composables.dialogs.AccountSelectorDialog
 import me.budchirp.plak.ui.composables.dialogs.AreYouSureDialog
 import me.budchirp.plak.ui.composition.LocalNavController
@@ -81,7 +81,7 @@ fun InstanceView(slug: String? = null) {
 
                     Column {
                         Text(text = _instance.name, style = MaterialTheme.typography.titleMedium)
-                        Text(text = _instance.version)
+                        Text(text = _instance.version + " (${_instance.loader.type.type})")
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(space = 16.dp)) {

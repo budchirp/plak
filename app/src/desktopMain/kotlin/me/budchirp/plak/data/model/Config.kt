@@ -14,7 +14,7 @@ data class Config(
 )
 
 @Serializable
-data class UIConfig(val darkTheme: Boolean = true)
+data class UIConfig(val darkMode: Boolean = true)
 
 @Serializable
 data class LaunchConfig(
